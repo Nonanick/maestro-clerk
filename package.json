@@ -1,0 +1,17 @@
+{
+  "name": "maestro-clerk",
+  "version": "0.0.1",
+  "description": "Maestro and Clerk integrations",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "Nicholas Frai",
+  "license": "MIT",
+  "private": false,
+  "devDependencies": {
+    "@types/json-schema": "^7.0.6",
+    "@types/node": "^14.14.10"
+  },
+  "dependencies": {
+    "tslib": "^2.0.3"
+  }
+}
