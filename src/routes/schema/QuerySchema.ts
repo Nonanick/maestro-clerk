@@ -1,51 +1,53 @@
-import { IEntity, PropertyComparisonArray } from "auria-clerk";
-import { JSONSchema7 } from 'json-schema';
+import {
+  Entity,
+  getAsIProperty,
+  IEntity,
+  PropertyComparisonArray,
+} from "clerk";
+import { JSONSchema7 } from "json-schema";
 import { RouteSchema } from "maestro";
-import { GetPropertySchema } from './Util';
+import { GetPropertySchema } from "./Util";
 
-export function QuerySchema(entity: IEntity): RouteSchema {
-
+export function QuerySchema(entity: Entity): RouteSchema {
   let allPublicProps = Array.from(Object.entries(entity.properties))
-    .filter(([name, prop]) => {
-      return prop.private !== true;
+    .filter(([_, prop]) => {
+      return prop.isPrivate() !== true;
     })
-    .map(([name, prop]) => name)
-    .concat(entity.identifier?.name ?? '_id');
+    .map(([name]) => name)
+    .concat(entity.identifier?.name ?? "_id");
 
   let allRelatedProps = Array.from(Object.entries(entity.properties))
-    .filter(([name, prop]) => {
-      return prop.relatedTo != null;
+    .filter(([_, prop]) => {
+      return prop.hasRelation();
     })
-    .map(([name, prop]) => name);
+    .map(([name]) => name);
 
   if (allRelatedProps.length < 1) {
-    allRelatedProps.push('none');
+    allRelatedProps.push("none");
   }
 
   let propertyTypes: {
     [name: string]: JSONSchema7;
   } = {};
 
-
   Object.entries(entity.properties)
-    .filter(([name, prop]) => {
-      return prop.private !== true;
+    .filter(([_, prop]) => {
+      return prop.isPrivate() !== true;
     }).forEach(([name, prop]) => {
-      let schema = GetPropertySchema({ name, ...prop });
+      let schema = GetPropertySchema(prop);
       propertyTypes[name] = schema;
     });
 
   return {
     body: {
-      type: 'object',
+      type: "object",
       properties: {
-
         // Return properties
         properties: {
-          type: 'array',
+          type: "array",
           items: {
-            type: 'string',
-            enum: allPublicProps
+            type: "string",
+            enum: allPublicProps,
           },
           maxItems: 20,
           minItems: 1,
@@ -55,19 +57,19 @@ export function QuerySchema(entity: IEntity): RouteSchema {
 
         // Filter by
         filters: {
-          type: 'object',
+          type: "object",
           patternProperties: {
             "": {
               type: "array",
               items: [
                 { type: "string", enum: allPublicProps },
                 { type: "string", enum: [...PropertyComparisonArray] },
-                {}
+                {},
               ],
-            }
+            },
           },
           maxProperties: 20,
-          minProperties: 1
+          minProperties: 1,
         },
 
         // Limit by
@@ -82,14 +84,14 @@ export function QuerySchema(entity: IEntity): RouteSchema {
             offset: {
               type: "number",
               minimum: 0,
-            }
-          }
+            },
+          },
         },
 
         // Include relations
         include: {
           type: "array",
-          enum: allRelatedProps
+          enum: allRelatedProps,
         },
 
         // Order by
@@ -97,7 +99,7 @@ export function QuerySchema(entity: IEntity): RouteSchema {
           type: ["array", "object"],
           items: {
             type: "object",
-            required: ['by'],
+            required: ["by"],
             properties: {
               by: {
                 type: "string",
@@ -105,11 +107,11 @@ export function QuerySchema(entity: IEntity): RouteSchema {
               },
               direction: {
                 type: "string",
-                enum: ["asc", "desc"]
-              }
-            }
+                enum: ["asc", "desc"],
+              },
+            },
           },
-          required: ['by'],
+          required: ["by"],
           properties: {
             by: {
               type: "string",
@@ -117,26 +119,25 @@ export function QuerySchema(entity: IEntity): RouteSchema {
             },
             direction: {
               type: "string",
-              enum: ["asc", "desc"]
-            }
-          }
-        }
-
+              enum: ["asc", "desc"],
+            },
+          },
+        },
       },
       additionalProperties: false,
     },
 
     response: {
-      '2xx': {
-        type: 'array',
+      "2xx": {
+        type: "array",
         items: {
-          type: 'object',
+          type: "object",
           properties: {
-            ...propertyTypes
+            ...propertyTypes,
           },
-          additionalItems: false
-        }
-      }
-    }
+          additionalItems: false,
+        },
+      },
+    },
   };
 }

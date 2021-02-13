@@ -1,4 +1,4 @@
-import { Model } from 'auria-clerk';
+import { Model } from 'clerk';
 import { IProxyResponse, IRouteResponse } from 'maestro';
 import { QueryFailed } from '../../errors/QueryFailed';
 

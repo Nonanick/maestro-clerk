@@ -1,5 +1,12 @@
-import { IEntity, Store } from "auria-clerk";
-import { Controller, IProxiedRoute, IRouteRequest, MaybePromise, Resolver, RouteSchema } from "maestro";
+import { Entity, Store } from "clerk";
+import {
+  Controller,
+  IProxiedRoute,
+  IRouteRequest,
+  MaybePromise,
+  Resolver,
+  RouteSchema,
+} from "maestro";
 import { ProxyProcedureResponse } from "../proxy/response/ProxyProcedureResponse";
 import { ProxyQueryResponse } from "../proxy/response/ProxyQueryResponse";
 import { CreateSchema } from "../routes/schema/CreateSchema";
@@ -10,18 +17,86 @@ import { ShowSchema } from "../routes/schema/ShowSchema";
 import { UpdateSchema } from "../routes/schema/UpdateSchema";
 
 export class EntityController extends Controller {
-
   protected proceduresRoutes: {
     [name: string]: IProxiedRoute;
   } = {};
 
   get baseURL(): string {
-    return this.entity.name.replace(/_/g, '-').trim().toLocaleLowerCase();
+    return this.entity.name.replace(/_/g, "-").trim().toLocaleLowerCase();
+  }
+
+  get listApiRoute(): CtrlAddApiRoute {
+    return {
+      url: "",
+      methods: "get",
+      resolver: this.list.bind(this),
+      schema: ListSchema(this.entity),
+      requestProxies: [],
+      responseProxies: [ProxyQueryResponse],
+    };
+  }
+
+  get showApiRoute(): CtrlAddApiRoute {
+    return {
+      url: ":id",
+      methods: "get",
+      resolver: this.show.bind(this),
+      schema: ShowSchema(this.entity),
+      requestProxies: [],
+      responseProxies: [ProxyQueryResponse],
+    };
+  }
+
+  get queryApiRoute(): CtrlAddApiRoute {
+    return {
+      url: "query",
+      methods: "post",
+      resolver: this.query.bind(this),
+      schema: QuerySchema(this.entity),
+      requestProxies: [],
+      responseProxies: [ProxyQueryResponse],
+    };
+  }
+
+  get createApiRoute(): CtrlAddApiRoute {
+    return {
+      url: "new",
+      methods: "post",
+      resolver: this.create.bind(this),
+      schema: CreateSchema(this.entity),
+      requestProxies: [],
+      responseProxies: [ProxyProcedureResponse],
+      validate: async () => {
+        return true;
+      },
+    };
+  }
+
+  get updateApiRoute(): CtrlAddApiRoute {
+    return {
+      url: ":id",
+      methods: "patch",
+      resolver: this.update.bind(this),
+      schema: UpdateSchema(this.entity),
+      requestProxies: [],
+      responseProxies: [ProxyProcedureResponse],
+    };
+  }
+
+  get deleteApiRoute(): CtrlAddApiRoute {
+    return {
+      url: ":id",
+      methods: "delete",
+      resolver: this.delete.bind(this),
+      schema: DeleteSchema(),
+      requestProxies: [],
+      responseProxies: [ProxyProcedureResponse],
+    };
   }
 
   constructor(
     protected store: Store,
-    protected entity: IEntity,
+    protected entity: Entity,
     options?: {
       disable?: {
         describe?: boolean;
@@ -33,86 +108,39 @@ export class EntityController extends Controller {
         delete?: boolean;
         [name: string]: boolean | undefined;
       };
-    }
+    },
   ) {
     super();
 
     // List
     if (options?.disable?.list !== true) {
-      this.addApiRoute({
-        url: '',
-        methods: 'get',
-        resolver: this.list.bind(this),
-        schema: ListSchema(this.entity),
-        requestProxies: [],
-        responseProxies: [ProxyQueryResponse]
-      });
+      this.addApiRoute(this.listApiRoute);
     }
 
     // Show
     if (options?.disable?.show !== true) {
-      this.addApiRoute({
-        url: ':id',
-        methods: 'get',
-        resolver: this.show.bind(this),
-        schema: ShowSchema(this.entity),
-        requestProxies: [],
-        responseProxies: [ProxyQueryResponse]
-      });
+      this.addApiRoute(this.showApiRoute);
     }
 
     // Query Route
     if (options?.disable?.query !== true) {
-      this.addApiRoute({
-        url: 'query',
-        methods: 'post',
-        resolver: this.query.bind(this),
-        schema: QuerySchema(this.entity),
-        requestProxies: [],
-        responseProxies: [ProxyQueryResponse]
-      });
+      this.addApiRoute(this.queryApiRoute);
     }
 
-    // Add 
-    if (options?.disable?.create !== true && this.hasProcedure('create')) {
-      this.addApiRoute({
-        url: 'new',
-        methods: 'post',
-        resolver: this.create.bind(this),
-        schema: CreateSchema(this.entity),
-        requestProxies: [],
-        responseProxies: [ProxyProcedureResponse],
-        validate: async (req) => {
-          return true;
-        }
-      });
+    // Add
+    if (options?.disable?.create !== true) {
+      this.addApiRoute(this.createApiRoute);
     }
 
-    // Update 
-    if (options?.disable?.update !== true && this.hasProcedure('update')) {
-      this.addApiRoute({
-        url: ':id',
-        methods: 'patch',
-        resolver: this.update.bind(this),
-        schema: UpdateSchema(this.entity),
-        requestProxies: [],
-        responseProxies: [ProxyProcedureResponse]
-      });
+    // Update
+    if (options?.disable?.update !== true) {
+      this.addApiRoute(this.updateApiRoute);
     }
 
-    // Delete 
-    if (options?.disable?.delete !== true && this.hasProcedure('delete')) {
-      this.addApiRoute({
-        url: ':id',
-        methods: 'delete',
-        resolver: this.delete.bind(this),
-        schema: DeleteSchema(this.entity),
-        requestProxies: [],
-        responseProxies: [ProxyProcedureResponse]
-      });
+    // Delete
+    if (options?.disable?.delete !== true && this.hasProcedure("delete")) {
+      this.addApiRoute(this.deleteApiRoute);
     }
-
-    // Generate procedure routes ?
 
   }
 
@@ -120,17 +148,20 @@ export class EntityController extends Controller {
     return this.store;
   }
 
-  getEntity() {
+  getStoreEntity() {
     return this.store.entity(this.entity.name);
   }
 
-  guardAccessTo(procedure: string, guard: (request: IRouteRequest) => MaybePromise<true>) {
+  guardAccessTo(
+    procedure: string,
+    guard: (request: IRouteRequest) => MaybePromise<true>,
+  ) {
     for (let route of this._apiRoutes) {
       if (route.resolver === (this as any)[procedure]) {
         route.requestProxies.push(guard);
         break;
       }
-    };
+    }
   }
 
   useSchema(procedure: string, schema: RouteSchema) {
@@ -139,7 +170,7 @@ export class EntityController extends Controller {
         route.schema = schema;
         break;
       }
-    };
+    }
   }
 
   useResolver(procedure: string, resolver: Resolver) {
@@ -148,40 +179,45 @@ export class EntityController extends Controller {
         route.resolver = resolver;
         break;
       }
-    };
+    }
   }
 
-  useCaster(procedure: string, caster: (request: IRouteRequest) => Promise<IRouteRequest>) {
+  useCaster(
+    procedure: string,
+    caster: (request: IRouteRequest) => Promise<IRouteRequest>,
+  ) {
     for (let route of this._apiRoutes) {
       if (route.resolver === (this as any)[procedure]) {
         route.cast = caster;
         break;
       }
-    };
+    }
   }
 
   hasProcedure(procedure: string): boolean {
-    return this.entity.procedures?.ofModel?.[procedure] != null;
+    return this.getStoreEntity().proceduresFor.model[procedure] != null;
   }
 
   hasEntityProcedure(procedure: string): boolean {
-    return this.entity.procedures?.ofEntity?.[procedure] != null;
+    return this.getStoreEntity().proceduresFor.entity[procedure] != null;
   }
 
-
-  async list(request: IRouteRequest) {
-
-    let allModels = await this.getEntity()?.query().fetch(true);
+  async list() {
+    let allModels = await this.getStoreEntity().query().fetch(true);
 
     return allModels;
-  };
+  }
 
   async show(request: IRouteRequest) {
-    let modelById = await this.getEntity()?.
-      query({
+    let modelById = await this.getStoreEntity()
+      .query({
         filters: {
-          'by-id': [this.getEntity()!.identifier.name, '=', request.get('id', 'url')]
-        }
+          "by-id": [
+            this.getStoreEntity()!.identifier.name,
+            "=",
+            request.get("id", "url"),
+          ],
+        },
       })
       .fetchOne(true);
 
@@ -189,8 +225,7 @@ export class EntityController extends Controller {
   }
 
   async query(request: IRouteRequest) {
-
-    let queriedModels = await this.getEntity()!
+    let queriedModels = await this.getStoreEntity()!
       .query(request.byOrigin!.body)
       .fetch();
 
@@ -203,38 +238,58 @@ export class EntityController extends Controller {
     }
 
     return queriedModels
-      .map(model => model
-        .$json()
-        .then(obj => {
-          // only return requested props
-          if (request.byOrigin!.body?.properties != null) {
-            let ret: any = {};
-            for (let propName of request.byOrigin!.body?.properties) {
-              ret[propName] = obj[propName];
+      .map((model) =>
+        model
+          .$json()
+          .then((obj: any) => {
+            // only return requested props
+            if (request.byOrigin!.body?.properties != null) {
+              let ret: any = {};
+              for (let propName of request.byOrigin!.body?.properties) {
+                ret[propName] = obj[propName];
+              }
+              return ret;
+            } else {
+              return obj;
             }
-            return ret;
-          } else {
-            return obj;
-          }
-        })
+          })
       );
   }
 
   async create(request: IRouteRequest) {
-    const model = this.getEntity()!.model();
-    if (request.byOrigin?.body == null) {
-      return new Error('Empty body!');
+    if (!this.hasProcedure("create")) {
+      return new Error(
+        "Failed to find procedure 'create' on entity " + this.entity.name,
+      );
     }
-    await model.$set(request.byOrigin.body);
-    return await model.$execute('create');
+
+    const model = this.getStoreEntity()!.model();
+
+    if (request.byOrigin?.body == null) {
+      return new Error("Empty body!");
+    }
+
+    model.$set(request.byOrigin.body);
+
+    return model.$execute("create");
   }
 
   async update(request: IRouteRequest) {
-    let model = await this.getEntity()
+    if (!this.hasProcedure("update")) {
+      return new Error(
+        "Failed to find procedure 'update' on entity " + this.entity.name,
+      );
+    }
+
+    let model = await this.getStoreEntity()
       .query({
         filters: {
-          'by-id': [this.getEntity().identifier.name, '=', request.get('id', 'url')]
-        }
+          "by-id": [
+            this.getStoreEntity().identifier.name,
+            "=",
+            request.get("id", "url"),
+          ],
+        },
       })
       .fetchOne();
 
@@ -243,20 +298,24 @@ export class EntityController extends Controller {
     }
 
     if (model == null) {
-      return new Error('Could not find match with ' + request.get('id', 'url'));
+      return new Error("Could not find match with " + request.get("id", "url"));
     }
 
     await model.$set(request.byOrigin!.body);
 
-    return model.$execute('delete');
+    return model.$execute("delete");
   }
 
   async delete(request: IRouteRequest) {
-    let model = await this.getEntity()
+    let model = await this.getStoreEntity()
       .query({
         filters: {
-          'by-id': [this.getEntity().identifier.name, '=', request.get('id', 'url')]
-        }
+          "by-id": [
+            this.getStoreEntity().identifier.name,
+            "=",
+            request.get("id", "url"),
+          ],
+        },
       })
       .fetchOne();
 
@@ -265,10 +324,21 @@ export class EntityController extends Controller {
     }
 
     if (model == null) {
-      return new Error('Could not find match with ' + request.get('id', 'url'));
+      return new Error("Could not find match with " + request.get("id", "url"));
     }
 
-    return model.$execute('delete');
+    return model.$execute("delete");
   }
-
 }
+
+export type CtrlAddApiRoute = Pick<
+  IProxiedRoute,
+  | "requestProxies"
+  | "responseProxies"
+  | "url"
+  | "methods"
+  | "resolver"
+  | "schema"
+  | "cast"
+  | "validate"
+>;

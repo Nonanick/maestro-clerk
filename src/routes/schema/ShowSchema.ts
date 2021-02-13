@@ -1,20 +1,19 @@
-import { IEntity } from "auria-clerk";
+import { Entity, getAsIProperty, IEntity } from "clerk";
 import type { JSONSchema7 } from 'json-schema';
 import { RouteSchema } from "maestro";
 import { GetPropertySchema } from './Util';
 
-export function ShowSchema(entity: IEntity): RouteSchema {
+export function ShowSchema(entity: Entity): RouteSchema {
 
   let propertyTypes: {
     [name: string]: JSONSchema7;
   } = {};
 
-
   Object.entries(entity.properties)
-    .filter(([name, prop]) => {
-      return prop.private !== true;
+    .filter(([_, prop]) => {
+      prop.isPrivate() !== true;
     }).forEach(([name, prop]) => {
-      let schema = GetPropertySchema({ name, ...prop });
+      let schema = GetPropertySchema(prop);
       propertyTypes[name] = schema;
     });
 

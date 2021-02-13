@@ -1,5 +1,5 @@
 import { IProxyResponse, IRouteResponse } from 'maestro';
-import { IProcedureResponse } from 'auria-clerk';
+import { IProcedureResponse } from 'clerk';
 import { ProcedureFailed } from '../../errors/ProcedureFailed';
 
 export const ProxyProcedureResponse: IProxyResponse = {

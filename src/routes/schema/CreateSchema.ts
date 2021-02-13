@@ -1,15 +1,16 @@
-import { IEntity, normalizePropertyType } from "auria-clerk";
+import { Entity, getAsIProperty, IEntity, normalizePropertyType } from "clerk";
 import { JSONSchema7 } from 'json-schema';
 import { RouteSchema } from "maestro";
 import { GetPropertySchema } from './Util';
 
-export function CreateSchema(entity: IEntity): RouteSchema {
+export function CreateSchema(entity: Entity): RouteSchema {
 
   // Required props are marked as required and don't have a default value!
   let requiredProps = Object.entries(entity.properties)
     .filter(
       ([name, prop]) => {
-        return prop.required === true && prop.default == null;
+        let p = prop;
+        return p.isRequired() === true && p.hasDefault() === false;
       }
     )
     .map(([name]) => name);
@@ -20,7 +21,7 @@ export function CreateSchema(entity: IEntity): RouteSchema {
 
   for (let propName in entity.properties) {
     let property = entity.properties[propName];
-    let schema = GetPropertySchema({ name: propName, ...property });
+    let schema = GetPropertySchema(property);
     propertyTypes[propName] = schema;
   }
 

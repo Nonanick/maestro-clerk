@@ -1,4 +1,4 @@
-import { Entity, IEntity, Store } from "auria-clerk";
+import { Entity, IEntity, Store } from "clerk";
 import { JSONSchema7 } from 'json-schema';
 import { ObjectSchema } from 'maestro/dist/route/schema/CustomSchemas';
 

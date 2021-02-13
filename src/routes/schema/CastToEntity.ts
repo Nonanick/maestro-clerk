@@ -1,4 +1,4 @@
-import { Entity, IEntity, Store } from 'auria-clerk';
+import { Entity, IEntity, Store } from 'clerk';
 import { IRouteRequest } from 'maestro';
 
 export function CastObjectToEntityModel(entity: Entity | [Store, IEntity], pickProps: string[]): (

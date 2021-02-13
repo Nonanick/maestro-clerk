@@ -1,9 +1,9 @@
-import { IEntity } from "auria-clerk";
+import { Entity } from "clerk";
 import { JSONSchema7 } from 'json-schema';
 import { RouteSchema } from "maestro";
 import { GetPropertySchema } from './Util';
 
-export function UpdateSchema(entity: IEntity): RouteSchema {
+export function UpdateSchema(entity: Entity): RouteSchema {
 
   let propertyTypes: {
     [name: string]: JSONSchema7;
@@ -11,7 +11,7 @@ export function UpdateSchema(entity: IEntity): RouteSchema {
 
   for (let propName in entity.properties) {
     let property = entity.properties[propName];
-    let schema = GetPropertySchema({ name: propName, ...property });
+    let schema = GetPropertySchema(property);
     propertyTypes[propName] = schema;
   }
 

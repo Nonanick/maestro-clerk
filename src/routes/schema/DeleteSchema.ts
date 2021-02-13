@@ -1,7 +1,6 @@
-import { IEntity } from "auria-clerk";
 import { RouteSchema } from "maestro";
 
-export function DeleteSchema(entity: IEntity): RouteSchema {
+export function DeleteSchema(): RouteSchema {
   return {
     params: {
       type: 'object',

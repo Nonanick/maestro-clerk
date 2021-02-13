@@ -1,21 +1,22 @@
-import { IProperty, normalizePropertyType } from 'auria-clerk';
+import { IStringType, normalizePropertyType, Property } from 'clerk';
 import { JSONSchema7 } from 'json-schema';
 
-export function GetPropertySchema(property: IProperty): JSONSchema7 {
+export function GetPropertySchema(property: Property): JSONSchema7 {
 
   let schema: JSONSchema7 = {};
 
-  let normalized = normalizePropertyType(property.type) as any;
+  let normalized : any = property.getType();
   let rawType = normalized.raw;
 
   switch (rawType.name) {
     case 'String':
+      let stringType = <IStringType>normalized;
       schema = {
         type: 'string',
-        minLength: normalized.minLength,
-        maxLength: normalized.maxLength,
-        pattern: normalized.pattern,
-        format: normalized.format,
+        minLength: stringType.minLength,
+        maxLength: stringType.maxLength,
+        pattern: stringType.pattern,
+        format: stringType.format,
       };
 
       break;

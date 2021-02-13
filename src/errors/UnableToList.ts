@@ -1,4 +1,4 @@
-import { AppError } from "auria-clerk";
+import { AppError } from "clerk";
 
 export class UnableToListModels extends AppError {
   statusCode = 400;
