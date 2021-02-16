@@ -1,7 +1,7 @@
 import { Entity, IEntity, Store } from 'clerk';
 import { IRouteRequest } from 'maestro';
 
-export function CastObjectToEntityModel(entity: Entity | [Store, IEntity], pickProps: string[]): (
+export function CastObjectToEntityModel(entity: Entity | [Store, IEntity], pickProps: string[] | "public" = "public"): (
   (request: IRouteRequest) => Promise<IRouteRequest>
 ) {
 
@@ -35,18 +35,35 @@ export function CastObjectToEntityModel(entity: Entity | [Store, IEntity], pickP
     // Force creation of default values
     await model.$json();
 
+    let setProperties: string[];
+
     // Filter props if picked
-    if (pickProps.length > 0) {
+    if (pickProps === "public") {
+      setProperties = Object.entries(useEntity.properties)
+        .filter(([_, prop]) => {
+          return !prop.isPrivate();
+        }).map(([propertyName]) => propertyName);
+
+    } else {
       Object.entries(value).forEach(
         ([prop]) => {
           if (!pickProps.includes(prop)) {
             delete value[prop];
           }
         });
+        setProperties = pickProps;
+    }
+
+    let setValues : any= {};
+    for(let prop of setProperties) {
+      setValues[prop] = value[prop];
     }
 
     // Try to set all values from body
-    let success = model.$set(value);
+    let success = model.$set(
+      setValues
+    );
+
     if (success) {
       request.setOrigin('body', model);
     }
