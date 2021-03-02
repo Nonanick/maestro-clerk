@@ -11,7 +11,7 @@ export function ListSchema(entity: Entity): RouteSchema {
 
 
   Object.entries(entity.properties)
-    .filter(([_, prop]) => {
+    .filter(([name, prop]) => {
       return prop.isPrivate() !== true;
     }).forEach(([name, prop]) => {
       let schema = GetPropertySchema(prop);

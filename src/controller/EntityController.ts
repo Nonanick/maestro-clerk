@@ -18,6 +18,7 @@ import { UpdateSchema } from "../routes/schema/UpdateSchema";
 
 
 export class EntityController extends Controller {
+
   protected proceduresRoutes: {
     [name: string]: IProxiedRoute;
   } = {};
@@ -235,6 +236,7 @@ export class EntityController extends Controller {
       .fetchOne(true);
 
     return modelById;
+
   }
 
   async query(request: IRouteRequest) {
