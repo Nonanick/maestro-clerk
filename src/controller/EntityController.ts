@@ -1,4 +1,4 @@
-import { Entity, Store } from "clerk";
+import { Entity, IEntity, Store, StoredEntity } from "clerk";
 import {
   Controller,
   IProxiedRoute,
@@ -15,6 +15,7 @@ import { ListSchema } from "../routes/schema/ListSchema";
 import { QuerySchema } from "../routes/schema/QuerySchema";
 import { ShowSchema } from "../routes/schema/ShowSchema";
 import { UpdateSchema } from "../routes/schema/UpdateSchema";
+
 
 export class EntityController extends Controller {
   protected proceduresRoutes: {
@@ -94,9 +95,21 @@ export class EntityController extends Controller {
     };
   }
 
+  get entity(): StoredEntity {
+    let entityName: string;
+
+    if (typeof this._entity === "string") {
+      entityName = this._entity;
+    } else {
+      entityName = this._entity.name;
+    }
+
+    return this.store.entity(entityName);
+  }
+
   constructor(
     protected store: Store,
-    protected entity: Entity,
+    protected _entity: Entity | IEntity | string,
     options?: {
       disable?: {
         describe?: boolean;
