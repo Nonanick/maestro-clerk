@@ -1,20 +1,19 @@
 import {
   Entity,
-  getAsIProperty,
-  IEntity,
-  PropertyComparisonArray,
+  PropertyComparisonArray
 } from "clerk";
 import { JSONSchema7 } from "json-schema";
 import { RouteSchema } from "maestro";
 import { GetPropertySchema } from "./Util";
 
 export function QuerySchema(entity: Entity): RouteSchema {
-  let allPublicProps = Array.from(Object.entries(entity.properties))
-    .filter(([_, prop]) => {
-      return prop.isPrivate() !== true;
-    })
-    .map(([name]) => name)
-    .concat(entity.identifier?.name ?? "_id");
+  let allPublicProps = Array.from(new Set(
+    Array.from(Object.entries(entity.properties))
+      .filter(([_, prop]) => {
+        return prop.isPrivate() !== true;
+      })
+      .map(([name]) => name)
+  ));
 
   let allRelatedProps = Array.from(Object.entries(entity.properties))
     .filter(([_, prop]) => {
